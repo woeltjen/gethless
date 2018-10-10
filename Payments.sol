@@ -134,9 +134,18 @@ contract Payments {
         );
     }
     
-    constructor(address erc20, address arb) public {
-        token = ERC20(erc20);
-        arbitrar = arb;
+    constructor(
+        address _token,
+        address _arbitrar,
+        uint64 _cancelDeadline,
+        uint64 _disputeDeadline
+    )
+        public
+    {
+        token = ERC20(_token);
+        arbitrar = _arbitrar;
+        cancelDeadline = _cancelDeadline;
+        disputeDeadline = _disputeDeadline;
     }
     
     function total(bytes32 id) private view returns (uint256) {
@@ -152,10 +161,15 @@ contract Payments {
         uint256 deposit,
         uint64 cancelDeadline,
         uint64 disputeDeadline
-    ) public invoices(id) {
+    )
+        public
+        invoices(id)
+    {
         require(!details[id].exists);
+        require(cancelDeadline > (now + cancelPeriod));
+        require(disputeDeadline > (cancelDeadline + disputePeriod));
         details[id] = Details(
-            true, //bool exists;
+            true,
             msg.sender,
             purchaser,
             price,
