@@ -62,22 +62,7 @@ contract Payments {
             msg.sender == details[id].purchaser);
         _;
     }
-    
-    modifier canPayout(bytes32 id) {
-        require(now > details[id].disputeDeadline);
-        _;
-    }
-    
-    modifier canDispute(bytes32 id) {
-        require(now < details[id].disputeDeadline);
-        _;
-    }
-    
-    modifier canCancel(bytes32 id) {
-        require(now < details[id].cancelDeadline);
-        _;
-    }
-    
+
     modifier completes(bytes32 id) {
         require(details[id].exists);
         details[id].exists = false;
@@ -97,6 +82,7 @@ contract Payments {
     }
     
     modifier pays(bytes32 id) {
+        require(now > details[id].disputeDeadline);
         _;
         emit Payout(
             details[id].supplier,
@@ -107,6 +93,7 @@ contract Payments {
     }
     
     modifier cancels(bytes32 id) {
+        require(now < details[id].cancelDeadline);
         _;
         emit Cancel(
             details[id].supplier,
@@ -117,6 +104,7 @@ contract Payments {
     }
     
     modifier disputes(bytes32 id) {
+        require(now < details[id].disputeDeadline);
         _;
         emit Dispute(
             msg.sender,
@@ -185,14 +173,14 @@ contract TokenPayments is Payments {
     
     function cancel(bytes32 id) 
         public
-        onlyPurchaser(id) canCancel(id) completes(id) cancels(id)
+        onlyPurchaser(id) completes(id) cancels(id)
     {
         require(token.transfer(details[id].purchaser, total(id)));
     }
     
     function payout(bytes32 id) 
         public
-        onlySupplier(id) canPayout(id) completes(id) pays(id)
+        onlySupplier(id) completes(id) pays(id)
     {
         require(token.transfer(details[id].supplier, details[id].price));
         require(token.transfer(details[id].purchaser, details[id].deposit));
@@ -200,7 +188,7 @@ contract TokenPayments is Payments {
     
     function dispute(bytes32 id)
         public
-        onlyParticipant(id) canDispute(id) completes(id) disputes(id)
+        onlyParticipant(id) completes(id) disputes(id)
     {
         require(token.transfer(arbiter, total(id)));
     }
