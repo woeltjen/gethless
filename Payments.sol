@@ -39,6 +39,7 @@ contract Payments {
         uint256 deposit
     );    
     event Dispute (
+        address arbiter,
         address disputant,
         address supplier,
         address purchaser,
@@ -48,7 +49,7 @@ contract Payments {
     
     mapping(bytes32 => Details) details;
     ERC20 token;
-    address arbitrar;
+    address arbiter;
     
     modifier exists(bytes32 id) {
         require(details[id].exists);
@@ -127,6 +128,7 @@ contract Payments {
         _;
         emit Dispute(
             msg.sender,
+            arbiter,
             details[id].supplier,
             details[id].purchaser,
             details[id].price,
@@ -136,14 +138,14 @@ contract Payments {
     
     constructor(
         address _token,
-        address _arbitrar,
+        address _arbiter,
         uint64 _cancelDeadline,
         uint64 _disputeDeadline
     )
         public
     {
         token = ERC20(_token);
-        arbitrar = _arbitrar;
+        arbiter = _arbiter;
         cancelDeadline = _cancelDeadline;
         disputeDeadline = _disputeDeadline;
     }
@@ -199,7 +201,7 @@ contract Payments {
         public
         exists(id) onlyParticipant(id) canDispute(id) terminates(id) disputes(id) 
     {
-        require(token.transfer(arbitrar, total(id)));
+        require(token.transfer(arbiter, total(id)));
     }
 }
 
