@@ -70,6 +70,7 @@ contract Payments {
     }
     
     modifier invoices(bytes32 id) {
+        require(!details[id].exists);
         _;
         emit Invoice(
             details[id].supplier,
@@ -153,10 +154,8 @@ contract TokenPayments is Payments {
         uint64 cancelDeadline,
         uint64 disputeDeadline
     )
-        public
-        invoices(id)
+        public invoices(id)
     {
-        require(!details[id].exists);
         require(cancelDeadline > (now + cancelPeriod));
         require(disputeDeadline > (cancelDeadline + disputePeriod));
         details[id] = Details(
@@ -172,23 +171,20 @@ contract TokenPayments is Payments {
     }
     
     function cancel(bytes32 id) 
-        public
-        onlyPurchaser(id) completes(id) cancels(id)
+        public onlyPurchaser(id) completes(id) cancels(id)
     {
         require(token.transfer(details[id].purchaser, total(id)));
     }
     
     function payout(bytes32 id) 
-        public
-        onlySupplier(id) completes(id) pays(id)
+        public onlySupplier(id) completes(id) pays(id)
     {
         require(token.transfer(details[id].supplier, details[id].price));
         require(token.transfer(details[id].purchaser, details[id].deposit));
     }
     
     function dispute(bytes32 id)
-        public
-        onlyParticipant(id) completes(id) disputes(id)
+        public onlyParticipant(id) completes(id) disputes(id)
     {
         require(token.transfer(arbiter, total(id)));
     }
