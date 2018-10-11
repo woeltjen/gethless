@@ -47,11 +47,6 @@ contract Payments {
         uint256 deposit
     );
     
-    modifier exists(bytes32 id) {
-        require(details[id].exists);
-        _;
-    }
-
     modifier onlyPurchaser(bytes32 id) {
         require(msg.sender == details[id].purchaser);
         _;
@@ -83,7 +78,8 @@ contract Payments {
         _;
     }
     
-    modifier terminates(bytes32 id) {
+    modifier completes(bytes32 id) {
+        require(details[id].exists);
         details[id].exists = false;
         _;
     }
@@ -189,14 +185,14 @@ contract TokenPayments is Payments {
     
     function cancel(bytes32 id) 
         public
-        exists(id) onlyPurchaser(id) canCancel(id) terminates(id) cancels(id)
+        onlyPurchaser(id) canCancel(id) completes(id) cancels(id)
     {
         require(token.transfer(details[id].purchaser, total(id)));
     }
     
     function payout(bytes32 id) 
         public
-        exists(id) onlySupplier(id) canPayout(id) terminates(id) pays(id)
+        onlySupplier(id) canPayout(id) completes(id) pays(id)
     {
         require(token.transfer(details[id].supplier, details[id].price));
         require(token.transfer(details[id].purchaser, details[id].deposit));
@@ -204,7 +200,7 @@ contract TokenPayments is Payments {
     
     function dispute(bytes32 id)
         public
-        exists(id) onlyParticipant(id) canDispute(id) terminates(id) disputes(id) 
+        onlyParticipant(id) canDispute(id) completes(id) disputes(id)
     {
         require(token.transfer(arbiter, total(id)));
     }
