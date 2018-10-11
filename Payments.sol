@@ -58,8 +58,10 @@ contract Payments {
     }
     
     modifier onlyParticipant(bytes32 id) {
-        require(msg.sender == details[id].supplier || 
-            msg.sender == details[id].purchaser);
+        require(
+            msg.sender == details[id].supplier ||
+            msg.sender == details[id].purchaser
+        );
         _;
     }
 
@@ -117,8 +119,8 @@ contract Payments {
         );
     }
     
-    mapping(bytes32 => Details) details;
-    address arbiter;
+    mapping(bytes32 => Details) public details;
+    address public arbiter;
 }
 
 contract TokenPayments is Payments {
@@ -146,6 +148,12 @@ contract TokenPayments is Payments {
         return value;
     }
     
+    function add(uint64 a, uint64 b) private pure returns (uint64) {
+        uint64 value = a + b;
+        assert(value >= a && value >= b);
+        return value;
+    }
+
     function invoice(
         bytes32 id,
         address purchaser,
@@ -156,8 +164,8 @@ contract TokenPayments is Payments {
     )
         public invoices(id)
     {
-        require(cancelDeadline > (now + cancelPeriod));
-        require(disputeDeadline > (cancelDeadline + disputePeriod));
+        require(cancelDeadline > add(uint64(now), cancelPeriod));
+        require(disputeDeadline > add(cancelDeadline, disputePeriod));
         details[id] = Details(
             true,
             msg.sender,
