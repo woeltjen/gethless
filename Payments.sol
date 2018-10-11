@@ -47,10 +47,6 @@ contract Payments {
         uint256 deposit
     );
     
-    mapping(bytes32 => Details) details;
-    ERC20 token;
-    address arbiter;
-    
     modifier exists(bytes32 id) {
         require(details[id].exists);
         _;
@@ -136,18 +132,27 @@ contract Payments {
         );
     }
     
+    mapping(bytes32 => Details) details;
+    address arbiter;
+}
+
+contract TokenPayments is Payments {
+    ERC20 token;
+    uint64 cancelPeriod;
+    uint64 disputePeriod;
+
     constructor(
         address _token,
         address _arbiter,
-        uint64 _cancelDeadline,
-        uint64 _disputeDeadline
+        uint64 _cancelPeriod,
+        uint64 _disputePeriod
     )
         public
     {
         token = ERC20(_token);
         arbiter = _arbiter;
-        cancelDeadline = _cancelDeadline;
-        disputeDeadline = _disputeDeadline;
+        cancelPeriod = _cancelPeriod;
+        disputePeriod = _disputePeriod;
     }
     
     function total(bytes32 id) private view returns (uint256) {
