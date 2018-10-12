@@ -48,31 +48,32 @@ contract Payments {
     );
     
     modifier onlyPurchaser(bytes32 id) {
-        require(msg.sender == details[id].purchaser);
+        require(msg.sender == details[id].purchaser, "Purchaser only.");
         _;
     }
     
     modifier onlySupplier(bytes32 id) {
-        require(msg.sender == details[id].supplier);
+        require(msg.sender == details[id].supplier, "Supplier only.");
         _;        
     }
     
     modifier onlyParticipant(bytes32 id) {
         require(
             msg.sender == details[id].supplier ||
-            msg.sender == details[id].purchaser
+            msg.sender == details[id].purchaser,
+            "Participant only."
         );
         _;
     }
 
     modifier completes(bytes32 id) {
-        require(details[id].exists);
+        require(details[id].exists, "Unknown id.");
         details[id].exists = false;
         _;
     }
     
     modifier invoices(bytes32 id) {
-        require(!details[id].exists);
+        require(!details[id].exists, "Given id already exists.");
         _;
         emit Invoice(
             details[id].supplier,
@@ -85,7 +86,7 @@ contract Payments {
     }
     
     modifier pays(bytes32 id) {
-        require(now > details[id].disputeDeadline);
+        require(now > details[id].disputeDeadline, "Dispute deadline not met.");
         _;
         emit Payout(
             details[id].supplier,
@@ -96,7 +97,7 @@ contract Payments {
     }
     
     modifier cancels(bytes32 id) {
-        require(now < details[id].cancelDeadline);
+        require(now < details[id].cancelDeadline, "Cancel deadline passed.");
         _;
         emit Cancel(
             details[id].supplier,
@@ -107,7 +108,7 @@ contract Payments {
     }
     
     modifier disputes(bytes32 id) {
-        require(now < details[id].disputeDeadline);
+        require(now < details[id].disputeDeadline, "Dispute deadline passed.");
         _;
         emit Dispute(
             msg.sender,
@@ -164,8 +165,14 @@ contract TokenPayments is Payments {
     )
         public invoices(id)
     {
-        require(cancelDeadline > add(uint64(now), cancelPeriod));
-        require(disputeDeadline > add(cancelDeadline, disputePeriod));
+        require(
+            cancelDeadline > add(uint64(now), cancelPeriod),
+            "Cancel deadline too soon."
+        );
+        require(
+            disputeDeadline > add(cancelDeadline, disputePeriod),
+            "Dispute deadline too soon."
+        );
         details[id] = Details(
             true,
             msg.sender,
@@ -175,26 +182,41 @@ contract TokenPayments is Payments {
             cancelDeadline,
             disputeDeadline
         );
-        require(token.transferFrom(purchaser, address(this), total(id)));
+        require(
+            token.transferFrom(purchaser, address(this), total(id)),
+            "Transfer failed during invoice."
+        );
     }
     
     function cancel(bytes32 id) 
         public onlyPurchaser(id) completes(id) cancels(id)
     {
-        require(token.transfer(details[id].purchaser, total(id)));
+        require(
+            token.transfer(details[id].purchaser, total(id)),
+            "Transfer failed during cancel."
+        );
     }
     
     function payout(bytes32 id) 
         public onlySupplier(id) completes(id) pays(id)
     {
-        require(token.transfer(details[id].supplier, details[id].price));
-        require(token.transfer(details[id].purchaser, details[id].deposit));
+        require(
+            token.transfer(details[id].supplier, details[id].price),
+            "Transfer to supplier failed during payout."
+        );
+        require(
+            token.transfer(details[id].purchaser, details[id].deposit),
+            "Transfer to purchaser failed during payout."
+        );
     }
     
     function dispute(bytes32 id)
         public onlyParticipant(id) completes(id) disputes(id)
     {
-        require(token.transfer(arbiter, total(id)));
+        require(
+            token.transfer(arbiter, total(id)),
+            "Transfer failed during dispute."
+        );
     }
 }
 
