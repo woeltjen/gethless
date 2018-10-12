@@ -197,7 +197,7 @@ contract TokenPayments is Payments {
         );
     }
     
-    function payout(bytes32 id) 
+    function payout(bytes32 id)
         public onlySupplier(id) completes(id) pays(id)
     {
         require(
