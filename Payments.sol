@@ -44,7 +44,7 @@ contract Payments {
         uint256 deposit
     );    
     event Dispute (
-        address arbiter,
+        address arbitration,
         address disputant,
         address supplier,
         address purchaser,
@@ -117,7 +117,7 @@ contract Payments {
         _;
         emit Dispute(
             msg.sender,
-            arbiter,
+            arbitration,
             details[id].supplier,
             details[id].purchaser,
             details[id].price,
@@ -126,7 +126,7 @@ contract Payments {
     }
     
     mapping(bytes32 => Details) public details;
-    Arbitration public arbiter;
+    Arbitration public arbitration;
 }
 
 contract TokenPayments is Payments {
@@ -136,14 +136,14 @@ contract TokenPayments is Payments {
 
     constructor(
         address _token,
-        address _arbiter,
+        address _arbitration,
         uint64 _cancelPeriod,
         uint64 _disputePeriod
     )
         public
     {
         token = ERC20(_token);
-        arbiter = Arbitration(_arbiter);
+        arbitration = Arbitration(_arbitration);
         cancelPeriod = _cancelPeriod;
         disputePeriod = _disputePeriod;
     }
@@ -219,11 +219,11 @@ contract TokenPayments is Payments {
         public onlyParticipant(id) completes(id) disputes(id)
     {
         require(
-            token.transfer(arbiter, total(id)),
+            token.transfer(arbitration, total(id)),
             "Transfer failed during dispute."
         );
         require(
-            arbiter.arbitrate(
+            arbitration.arbitrate(
                 id,
                 details[id].supplier,
                 details[id].purchaser,
