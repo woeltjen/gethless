@@ -1,10 +1,15 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.24;
 
-contract ERC20 {
-    function transfer(address recipient, uint256 amount)
-        public returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public returns (bool);    
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+
+contract Arbitration {
+    function arbitrate(
+        bytes32 id,
+        address supplier,
+        address purchaser,
+        uint256 price,
+        uint256 deposit
+    ) external returns (bool);
 }
 
 contract Payments {
@@ -121,7 +126,7 @@ contract Payments {
     }
     
     mapping(bytes32 => Details) public details;
-    address public arbiter;
+    Arbitration public arbiter;
 }
 
 contract TokenPayments is Payments {
@@ -138,7 +143,7 @@ contract TokenPayments is Payments {
         public
     {
         token = ERC20(_token);
-        arbiter = _arbiter;
+        arbiter = Arbitration(_arbiter);
         cancelPeriod = _cancelPeriod;
         disputePeriod = _disputePeriod;
     }
@@ -216,6 +221,16 @@ contract TokenPayments is Payments {
         require(
             token.transfer(arbiter, total(id)),
             "Transfer failed during dispute."
+        );
+        require(
+            arbiter.arbitrate(
+                id,
+                details[id].supplier,
+                details[id].purchaser,
+                details[id].price,
+                details[id].deposit
+            ),
+            "Call to initiate arbitration failed."
         );
     }
 }
